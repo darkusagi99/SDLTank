@@ -150,7 +150,12 @@
     <ClCompile Include="Main.cpp" />
   </ItemGroup>
   <ItemGroup>
+    <Image Include="resources\background.bmp" />
+    <Image Include="resources\barrel.bmp" />
+    <Image Include="resources\bullet.bmp" />
+    <Image Include="resources\tank.bmp" />
     <Image Include="resources\testGrid.bmp" />
+    <Image Include="resources\turret.bmp" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

@@ -23,5 +23,20 @@
     <Image Include="resources\testGrid.bmp">
       <Filter>Fichiers de ressources</Filter>
     </Image>
+    <Image Include="resources\background.bmp">
+      <Filter>Fichiers de ressources</Filter>
+    </Image>
+    <Image Include="resources\barrel.bmp">
+      <Filter>Fichiers de ressources</Filter>
+    </Image>
+    <Image Include="resources\bullet.bmp">
+      <Filter>Fichiers de ressources</Filter>
+    </Image>
+    <Image Include="resources\tank.bmp">
+      <Filter>Fichiers de ressources</Filter>
+    </Image>
+    <Image Include="resources\turret.bmp">
+      <Filter>Fichiers de ressources</Filter>
+    </Image>
   </ItemGroup>
 </Project>
