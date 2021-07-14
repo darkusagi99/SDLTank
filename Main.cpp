@@ -6,6 +6,14 @@
 const int SCREEN_WIDTH = 1280;
 const int SCREEN_HEIGHT = 720;
 
+//Elements constants
+// Tank position
+const int TANK_POS_X = 50;
+const int TANK_POS_Y = 600;
+
+
+// Barrel positions
+
 int main(int argc, char* args[])
 {
 	//The window we'll be rendering to
@@ -19,11 +27,11 @@ int main(int argc, char* args[])
 	SDL_Surface* screenSurface = NULL;
 
 	//Load sprites
-	SDL_Surface* pBackground = SDL_LoadBMP("./resources/testGrid.bmp");
-	SDL_Surface* pBarrel = SDL_LoadBMP("./resources/testGrid.bmp");
-	SDL_Surface* pTank = SDL_LoadBMP("./resources/testGrid.bmp");
-	SDL_Surface* pTurret = SDL_LoadBMP("./resources/testGrid.bmp");
-	SDL_Surface* pBullet = SDL_LoadBMP("./resources/testGrid.bmp");
+	SDL_Surface* pBackground = SDL_LoadBMP("./resources/background.bmp");
+	SDL_Surface* pBarrel = SDL_LoadBMP("./resources/barrel.bmp");
+	SDL_Surface* pTank = SDL_LoadBMP("./resources/tank.bmp");
+	SDL_Surface* pTurret = SDL_LoadBMP("./resources/turret.bmp");
+	SDL_Surface* pBullet = SDL_LoadBMP("./resources/bullet.bmp");
 
 
 	//Initialize SDL
@@ -51,6 +59,7 @@ int main(int argc, char* args[])
 
 					switch (event.type) {
 						/* Keyboard event */
+						// TODO gestion des mouvements de la tourelle
 					case SDL_KEYDOWN:
 						/* Touche appuyée, changement de statut */
 						switch (event.key.keysym.sym) {
@@ -112,18 +121,36 @@ int main(int argc, char* args[])
 
 				}
 
+				// TODO - Capping 60 FPS
+
+				// TODO - Gestion des collisions
+				// TODO - Gestion de la physique de l'obus
+
 				//Get window surface
 				screenSurface = SDL_GetWindowSurface(window);
 
-				if (pBackground)
+				if (pBackground && pBarrel && pTank && pTurret && pBullet)
 				{
-					SDL_Rect dest = {0, 0, 0, 0 };
-					SDL_BlitSurface(pBackground, NULL, screenSurface, &dest); // Copie du sprite
+					SDL_Rect backgroundDest = {0, 0, 0, 0 };
 
-					//SDL_UpdateWindowSurface(window); // Mise à jour de la fenêtre pour prendre en compte la copie du sprite
-					//SDL_Delay(3000); /* Attendre trois secondes, que l'utilisateur voit la fenêtre */
+					// Dessin du décor
+					SDL_BlitSurface(pBackground, NULL, screenSurface, &backgroundDest); // Dessin du fond de l'écran
 
-					//SDL_FreeSurface(pSprite); // Libération de la ressource occupée par le sprite
+					// Dessin du tank
+					// Corps du tank
+					SDL_Rect tankBodyDest = { 25, 535, 0, 0 };
+					SDL_BlitSurface(pTank, NULL, screenSurface, &tankBodyDest); // Dessin du corps du tank
+
+					// Tourelle du tank
+					// TODO
+
+					// Dessin des barils
+					// TODO
+
+					// Dessin de l'obus
+					// TODO
+
+					SDL_UpdateWindowSurface(window); // Mise à jour de la fenêtre pour prendre en compte la copie du sprite
 				}
 				else
 				{
