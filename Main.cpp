@@ -11,8 +11,28 @@ const int SCREEN_HEIGHT = 720;
 const int TANK_POS_X = 50;
 const int TANK_POS_Y = 600;
 
+// Global vars
+long a, b, delta;
+const int MAX_ELEMENTS = 4;
 
-// Barrel positions
+// Struct for TRON Player
+struct gameElement {
+	int xmin, xmax, ymin, ymax, active;
+	SDL_Surface* psurface;
+	SDL_Rect eltRect;
+
+	// Constructor
+	gameElement(SDL_Surface* pelement, int x, int y) {
+		xmin = x;
+		xmax = pelement->w + x;
+		ymin = y;
+		ymax = pelement->h + y;
+		active = 1;
+		psurface = pelement;
+		eltRect = { x, y, 0, 0 };
+	}
+
+};
 
 int main(int argc, char* args[])
 {
@@ -33,6 +53,12 @@ int main(int argc, char* args[])
 	SDL_Surface* pTurret = SDL_LoadBMP("./resources/turret.bmp");
 	SDL_Surface* pBullet = SDL_LoadBMP("./resources/bullet.bmp");
 
+	// Init game elements
+	// Init gameElement (0 Tank, Others Barrels)
+	gameElement gameElements[MAX_ELEMENTS] = { gameElement(pTank, 25, 535),
+												gameElement(pBarrel, 565, 400),
+												gameElement(pBarrel, 760, 230),
+												gameElement(pBarrel, 1024, 475) };
 
 	//Initialize SDL
 	if (SDL_Init(SDL_INIT_VIDEO) < 0)
@@ -121,47 +147,58 @@ int main(int argc, char* args[])
 
 				}
 
-				// TODO - Capping 60 FPS
 
-				// TODO - Gestion des collisions
-				// TODO - Gestion de la physique de l'obus
+				// Capping to 60 FPS
+				a = SDL_GetTicks();
+				delta = a - b;
 
-				//Get window surface
-				screenSurface = SDL_GetWindowSurface(window);
+				if (delta > 1000 / 60.0) {
 
-				if (pBackground && pBarrel && pTank && pTurret && pBullet)
-				{
-					SDL_Rect backgroundDest = {0, 0, 0, 0 };
+					// FPS Management
+					b = a;
 
-					// Dessin du décor
-					SDL_BlitSurface(pBackground, NULL, screenSurface, &backgroundDest); // Dessin du fond de l'écran
+					// TODO - Gestion des collisions
+					// TODO - Gestion de la physique de l'obus
 
-					// Dessin du tank
-					// Corps du tank
-					SDL_Rect tankBodyDest = { 25, 535, 0, 0 };
-					SDL_BlitSurface(pTank, NULL, screenSurface, &tankBodyDest); // Dessin du corps du tank
+					//Get window surface
+					screenSurface = SDL_GetWindowSurface(window);
 
-					// Tourelle du tank
-					// TODO
+					if (pBackground && pBarrel && pTank && pTurret && pBullet)
+					{
+						SDL_Rect backgroundDest = {0, 0, 0, 0 };
 
-					// Dessin des barils
-					// TODO
+						// Dessin du décor
+						SDL_BlitSurface(pBackground, NULL, screenSurface, &backgroundDest); // Dessin du fond de l'écran
 
-					// Dessin de l'obus
-					// TODO
+						// Dessin du tank et des barils
+						// Corps du tank + Barils
+						for (int i = 0; i < MAX_ELEMENTS; i++) {
+							SDL_BlitSurface(gameElements[i].psurface, NULL, screenSurface, &gameElements[i].eltRect); // Dessin de chaque élément
+						}
 
-					SDL_UpdateWindowSurface(window); // Mise à jour de la fenêtre pour prendre en compte la copie du sprite
+
+						// Tourelle du tank
+						// TODO
+
+						// Dessin de l'obus
+						// TODO
+
+						SDL_UpdateWindowSurface(window); // Mise à jour de la fenêtre pour prendre en compte la copie du sprite
+					}
+					else
+					{
+						fprintf(stdout, "Échec de chargement du sprite (%s)\n", SDL_GetError());
+					}
+
+					//Fill the surface white
+					//SDL_FillRect(screenSurface, NULL, SDL_MapRGB(screenSurface->format, 0x11, 0x11, 0xDD));
+
+					//Update the surface
+					SDL_UpdateWindowSurface(window);
+
+
+
 				}
-				else
-				{
-					fprintf(stdout, "Échec de chargement du sprite (%s)\n", SDL_GetError());
-				}
-
-				//Fill the surface white
-				//SDL_FillRect(screenSurface, NULL, SDL_MapRGB(screenSurface->format, 0x11, 0x11, 0xDD));
-
-				//Update the surface
-				SDL_UpdateWindowSurface(window);
 
 			}
 
