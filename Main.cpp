@@ -10,6 +10,9 @@ const int SCREEN_HEIGHT = 720;
 // Tank position
 const int TANK_POS_X = 50;
 const int TANK_POS_Y = 600;
+const SDL_Point turretCenter = { 25, 25 };
+double turretAngle = 0;
+double turretSpeed = 1;
 
 // Global vars
 long a, b, delta;
@@ -18,18 +21,18 @@ const int MAX_ELEMENTS = 4;
 // Struct for TRON Player
 struct gameElement {
 	int xmin, xmax, ymin, ymax, active;
-	SDL_Surface* psurface;
+	SDL_Texture* texture;
 	SDL_Rect eltRect;
 
 	// Constructor
-	gameElement(SDL_Surface* pelement, int x, int y) {
+	gameElement(SDL_Surface* pelement, SDL_Texture* telement, int x, int y) {
 		xmin = x;
 		xmax = pelement->w + x;
 		ymin = y;
 		ymax = pelement->h + y;
 		active = 1;
-		psurface = pelement;
-		eltRect = { x, y, 0, 0 };
+		texture = telement;
+		eltRect = { x, y, pelement->w, pelement->h };
 	}
 
 };
@@ -38,6 +41,7 @@ int main(int argc, char* args[])
 {
 	//The window we'll be rendering to
 	SDL_Window* window = NULL;
+	SDL_Renderer* renderer = NULL;
 
 	// Event and Exit management
 	int quit = 0;
@@ -53,12 +57,8 @@ int main(int argc, char* args[])
 	SDL_Surface* pTurret = SDL_LoadBMP("./resources/turret.bmp");
 	SDL_Surface* pBullet = SDL_LoadBMP("./resources/bullet.bmp");
 
-	// Init game elements
-	// Init gameElement (0 Tank, Others Barrels)
-	gameElement gameElements[MAX_ELEMENTS] = { gameElement(pTank, 25, 535),
-												gameElement(pBarrel, 565, 400),
-												gameElement(pBarrel, 760, 230),
-												gameElement(pBarrel, 1024, 475) };
+
+
 
 	//Initialize SDL
 	if (SDL_Init(SDL_INIT_VIDEO) < 0)
@@ -69,6 +69,22 @@ int main(int argc, char* args[])
 	{
 		//Create window
 		window = SDL_CreateWindow("SDL Tank", SDL_WINDOWPOS_UNDEFINED, SDL_WINDOWPOS_UNDEFINED, SCREEN_WIDTH, SCREEN_HEIGHT, SDL_WINDOW_SHOWN);
+		renderer = SDL_CreateRenderer(window, -1, 0);
+
+		// Init textures
+		SDL_Texture* tBackground = SDL_CreateTextureFromSurface(renderer, pBackground);
+		SDL_Texture* tBarrel = SDL_CreateTextureFromSurface(renderer, pBarrel);
+		SDL_Texture* tTank = SDL_CreateTextureFromSurface(renderer, pTank);
+		SDL_Texture* tTurret = SDL_CreateTextureFromSurface(renderer, pTurret);
+		SDL_Texture* tBullet = SDL_CreateTextureFromSurface(renderer, pBullet);
+
+		// Init game elements
+		// Init gameElement (0 Tank, Others Barrels)
+		gameElement gameElements[MAX_ELEMENTS] = { gameElement(pTank, tTank, 25, 535),
+													gameElement(pBarrel, tBarrel, 565, 400),
+													gameElement(pBarrel, tBarrel, 760, 230),
+													gameElement(pBarrel, tBarrel, 1024, 475) };
+
 		//SDL_SetWindowFullscreen(window, SDL_WINDOW_FULLSCREEN_DESKTOP);
 		if (window == NULL)
 		{
@@ -85,15 +101,21 @@ int main(int argc, char* args[])
 
 					switch (event.type) {
 						/* Keyboard event */
-						// TODO gestion des mouvements de la tourelle
 					case SDL_KEYDOWN:
 						/* Touche appuyée, changement de statut */
 						switch (event.key.keysym.sym) {
 						case SDLK_LEFT:
-							//alien_xvel = -1;
+							turretAngle -= turretSpeed;
+
+							if (turretAngle < -205) {
+								turretAngle = -205;
+							}
 							break;
 						case SDLK_RIGHT:
-							//alien_xvel = 1;
+							turretAngle += turretSpeed;
+							if (turretAngle > 25) {
+								turretAngle = 25;
+							}
 							break;
 						case SDLK_SPACE:
 							//alien_yvel = 1;
@@ -112,18 +134,6 @@ int main(int argc, char* args[])
 
 						/* Touche appuyée, changement de statut */
 						switch (event.key.keysym.sym) {
-						case SDLK_LEFT:
-							//alien_xvel = -1;
-							break;
-						case SDLK_RIGHT:
-							//alien_xvel = 1;
-							break;
-						case SDLK_UP:
-							//alien_yvel = -1;
-							break;
-						case SDLK_DOWN:
-							//alien_yvel = 1;
-							break;
 						case SDLK_SPACE:
 							//alien_yvel = 1;
 							break;
@@ -165,44 +175,46 @@ int main(int argc, char* args[])
 
 					if (pBackground && pBarrel && pTank && pTurret && pBullet)
 					{
-						SDL_Rect backgroundDest = {0, 0, 0, 0 };
+						SDL_Rect backgroundDest = {0, 0, pBackground->w, pBackground->h };
 
 						// Dessin du décor
-						SDL_BlitSurface(pBackground, NULL, screenSurface, &backgroundDest); // Dessin du fond de l'écran
+						SDL_RenderCopy(renderer, tBackground, NULL, &backgroundDest);  // Dessin du fond de l'écran
+
+						// Tourelle du tank
+						// TODO
+						SDL_Rect turretRect = { 80, 485, pTurret->w, pTurret->h };
+						if (SDL_RenderCopyEx(renderer, tTurret, NULL, &turretRect, turretAngle, &turretCenter, SDL_FLIP_NONE) != 0) {
+							fprintf(stdout, "Erreur affichage tourelle (%s)\n", SDL_GetError());
+						}
 
 						// Dessin du tank et des barils
 						// Corps du tank + Barils
 						for (int i = 0; i < MAX_ELEMENTS; i++) {
-							SDL_BlitSurface(gameElements[i].psurface, NULL, screenSurface, &gameElements[i].eltRect); // Dessin de chaque élément
+							SDL_RenderCopy(renderer, gameElements[i].texture, NULL, &gameElements[i].eltRect); // Dessin de chaque élément
 						}
-
-
-						// Tourelle du tank
-						// TODO
 
 						// Dessin de l'obus
 						// TODO
 
-						SDL_UpdateWindowSurface(window); // Mise à jour de la fenêtre pour prendre en compte la copie du sprite
+						SDL_RenderPresent(renderer); // Affichage
 					}
 					else
 					{
 						fprintf(stdout, "Échec de chargement du sprite (%s)\n", SDL_GetError());
 					}
 
-					//Fill the surface white
-					//SDL_FillRect(screenSurface, NULL, SDL_MapRGB(screenSurface->format, 0x11, 0x11, 0xDD));
-
-					//Update the surface
-					SDL_UpdateWindowSurface(window);
-
-
-
 				}
 
 			}
 
 		}
+
+		SDL_DestroyTexture(tBackground);
+		SDL_DestroyTexture(tBarrel);
+		SDL_DestroyTexture(tTank);
+		SDL_DestroyTexture(tTurret);
+		SDL_DestroyTexture(tBullet);
+
 	}
 
 	// Libération de la mémoire pour les Sprites
@@ -213,6 +225,7 @@ int main(int argc, char* args[])
 	SDL_FreeSurface(pBullet);
 
 	//Destroy window
+	SDL_DestroyRenderer(renderer);
 	SDL_DestroyWindow(window);
 
 	//Quit SDL subsystems
