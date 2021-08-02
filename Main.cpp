@@ -35,6 +35,15 @@ double startBulletAngle = 0;
 int bulletX = 0;
 int bulletY = 0;
 
+int prevBulletX = 0;
+int prevBulletY = 0;
+
+
+int bulletXMax = 0;
+int bulletXMin = 0;
+int bulletYMax = 0;
+int bulletYMin = 0;
+
 // Struct for TRON Player
 struct gameElement {
 	int xmin, xmax, ymin, ymax, active;
@@ -168,13 +177,13 @@ int main(int argc, char* args[])
 						case SDLK_SPACE:
 
 							// Tirer
-							//if (bulletExist == 0) {
+							if (bulletExist == 0) {
 								bulletAngle = turretAngle;
 								startBulletAngle = bulletAngle;
 								bulletExist = 1;
 								bulletX = 90 + (65 * cos(bulletAngle * PI / 180.0));
 								bulletY = 480 + (65 * sin(bulletAngle * PI / 180.0));
-							//}
+							}
 							break;
 						case SDLK_ESCAPE:
 							quit = 1;
@@ -206,11 +215,16 @@ int main(int argc, char* args[])
 					// FPS Management
 					b = a;
 
-					// TODO - Gestion des collisions
 					// Gestion de la physique de l'obus
 					if (bulletExist == 1) {
+						bulletXMin = bulletX;
+						bulletYMin = bulletY;
 						bulletX += bulletspeed * cos(startBulletAngle * PI / 180);
 						bulletY = bulletY + (bulletspeed * sin(bulletAngle * PI / 180));
+
+						// Calcul pour les collisions
+						bulletXMax = bulletX + pBullet->w * cos(startBulletAngle * PI / 180) + pBullet->h * sin(bulletAngle * PI / 180);
+						bulletYMax = bulletY + pBullet->h * cos(startBulletAngle * PI / 180) + pBullet->w * sin(bulletAngle * PI / 180);
 
 						if (bulletAngle >= -90 && bulletAngle != 90) {
 							bulletAngle++;
@@ -222,10 +236,35 @@ int main(int argc, char* args[])
 						// Suppression de l'obus si sortie écran (gauche / droite / bas)
 						if (bulletX < -30 || bulletX  > SCREEN_WIDTH  + 30 || bulletY > SCREEN_HEIGHT + 30) {
 							bulletExist = 0;
-							bulletspeed = 1;
+							bulletspeed = 10;
 						}
 					
 					}
+
+
+					// TODO - Gestion des collisions
+					if (bulletExist == 1) {
+					
+						// Contrôle collision avec éléments
+						for (int i = 0; i < MAX_ELEMENTS; i++) {
+
+							// Contrôle sur les X, puis les Y
+							if (gameElements[i].active == 1) {
+								if (gameElements[i].xmin <= bulletXMax && gameElements[i].xmax >= bulletXMin) {
+									if (gameElements[i].ymin <= bulletYMax && gameElements[i].ymax >= bulletYMin) {
+										gameElements[i].active = 0;
+										bulletExist = 0;
+									}
+								}
+							}
+						}
+
+						// Contrôle des collisions avec le décor - TODO
+
+					
+					
+					}
+
 
 					//Get window surface
 					screenSurface = SDL_GetWindowSurface(window);
@@ -246,7 +285,9 @@ int main(int argc, char* args[])
 						// Dessin du tank et des barils
 						// Corps du tank + Barils
 						for (int i = 0; i < MAX_ELEMENTS; i++) {
-							SDL_RenderCopy(renderer, gameElements[i].texture, NULL, &gameElements[i].eltRect); // Dessin de chaque élément
+							if (gameElements[i].active == 1) {
+								SDL_RenderCopy(renderer, gameElements[i].texture, NULL, &gameElements[i].eltRect); // Dessin de chaque élément
+							}
 						}
 
 						// Dessin de l'obus
