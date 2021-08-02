@@ -2,6 +2,8 @@
 #include <SDL.h>
 #include <stdio.h>
 
+#define PI 3.14159265
+
 //Screen dimension constants
 const int SCREEN_WIDTH = 1280;
 const int SCREEN_HEIGHT = 720;
@@ -11,12 +13,27 @@ const int SCREEN_HEIGHT = 720;
 const int TANK_POS_X = 50;
 const int TANK_POS_Y = 600;
 const SDL_Point turretCenter = { 25, 25 };
-double turretAngle = 0;
-double turretSpeed = 1;
+const SDL_Point bulletCenter = { 15, 30 };
+
+// Global gameconfig
+double TURRET_SPEED = 1;
+double BULLET_MAX_SPEED = 30;
+double BULLET_ACC = 5;
 
 // Global vars
 long a, b, delta;
 const int MAX_ELEMENTS = 4;
+
+// --Turret vars
+double turretAngle = 0;
+
+// -- Bullet vars
+int bulletExist = 0;
+int bulletspeed = 0;
+double bulletAngle = 0;
+double startBulletAngle = 0;
+int bulletX = 0;
+int bulletY = 0;
 
 // Struct for TRON Player
 struct gameElement {
@@ -105,20 +122,34 @@ int main(int argc, char* args[])
 						/* Touche appuyée, changement de statut */
 						switch (event.key.keysym.sym) {
 						case SDLK_LEFT:
-							turretAngle -= turretSpeed;
-
+							// Tourner tourelle à gauche
+							turretAngle -= TURRET_SPEED;
 							if (turretAngle < -205) {
 								turretAngle = -205;
 							}
 							break;
 						case SDLK_RIGHT:
-							turretAngle += turretSpeed;
+							// Tourner tourelle à droite
+							turretAngle += TURRET_SPEED;
 							if (turretAngle > 25) {
 								turretAngle = 25;
 							}
 							break;
 						case SDLK_SPACE:
-							//alien_yvel = 1;
+							// Charger cannon
+							if (bulletExist == 0) {
+								bulletspeed += BULLET_ACC;
+							}
+
+							// Si cannon complètement chargé - tirer
+							if (bulletExist == 0 && bulletspeed >= BULLET_MAX_SPEED) {
+								bulletAngle = turretAngle;
+								startBulletAngle = bulletAngle;
+								bulletExist = 1;
+								bulletX = 90 + (65 * cos(bulletAngle * PI / 180.0));
+								bulletY = 480 + (65 * sin(bulletAngle * PI / 180.0));
+							}
+
 							break;
 						case SDLK_ESCAPE:
 							quit = 1;
@@ -135,7 +166,15 @@ int main(int argc, char* args[])
 						/* Touche appuyée, changement de statut */
 						switch (event.key.keysym.sym) {
 						case SDLK_SPACE:
-							//alien_yvel = 1;
+
+							// Tirer
+							//if (bulletExist == 0) {
+								bulletAngle = turretAngle;
+								startBulletAngle = bulletAngle;
+								bulletExist = 1;
+								bulletX = 90 + (65 * cos(bulletAngle * PI / 180.0));
+								bulletY = 480 + (65 * sin(bulletAngle * PI / 180.0));
+							//}
 							break;
 						case SDLK_ESCAPE:
 							quit = 1;
@@ -168,7 +207,25 @@ int main(int argc, char* args[])
 					b = a;
 
 					// TODO - Gestion des collisions
-					// TODO - Gestion de la physique de l'obus
+					// Gestion de la physique de l'obus
+					if (bulletExist == 1) {
+						bulletX += bulletspeed * cos(startBulletAngle * PI / 180);
+						bulletY = bulletY + (bulletspeed * sin(bulletAngle * PI / 180));
+
+						if (bulletAngle >= -90 && bulletAngle != 90) {
+							bulletAngle++;
+						}
+						else if (bulletAngle < -90 && bulletAngle != -270) {
+							bulletAngle--;
+						}
+
+						// Suppression de l'obus si sortie écran (gauche / droite / bas)
+						if (bulletX < -30 || bulletX  > SCREEN_WIDTH  + 30 || bulletY > SCREEN_HEIGHT + 30) {
+							bulletExist = 0;
+							bulletspeed = 1;
+						}
+					
+					}
 
 					//Get window surface
 					screenSurface = SDL_GetWindowSurface(window);
@@ -181,7 +238,6 @@ int main(int argc, char* args[])
 						SDL_RenderCopy(renderer, tBackground, NULL, &backgroundDest);  // Dessin du fond de l'écran
 
 						// Tourelle du tank
-						// TODO
 						SDL_Rect turretRect = { 80, 485, pTurret->w, pTurret->h };
 						if (SDL_RenderCopyEx(renderer, tTurret, NULL, &turretRect, turretAngle, &turretCenter, SDL_FLIP_NONE) != 0) {
 							fprintf(stdout, "Erreur affichage tourelle (%s)\n", SDL_GetError());
@@ -194,7 +250,11 @@ int main(int argc, char* args[])
 						}
 
 						// Dessin de l'obus
-						// TODO
+						if (bulletExist == 1) {
+							SDL_Rect bulletRect = { bulletX, bulletY, pBullet->w, pBullet->h };
+							SDL_RenderCopyEx(renderer, tBullet, NULL, &bulletRect, bulletAngle + 90, &bulletCenter, SDL_FLIP_NONE); // Dessin de chaque élément
+						}
+
 
 						SDL_RenderPresent(renderer); // Affichage
 					}
