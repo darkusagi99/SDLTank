@@ -23,6 +23,7 @@ double BULLET_ACC = 5;
 // Global vars
 long a, b, delta;
 const int MAX_ELEMENTS = 4;
+const int EXPLOSION_RADIUS = 50;
 
 // --Turret vars
 double turretAngle = 0;
@@ -37,12 +38,26 @@ int bulletY = 0;
 
 int prevBulletX = 0;
 int prevBulletY = 0;
+Uint32* backgroundPixels;
+Uint32 currentPixel;
+Uint32 referencePixel = 3935951338;
+Uint8* startColor;
+Uint8 rColor = 0;
+Uint8 gColor = 0;
+Uint8 bColor = 0;
+int nbBytesParPixel = 0;
 
+Uint8 emptyR = 153;
+Uint8 emptyG = 217;
+Uint8 emptyB = 234;
+
+bool field[SCREEN_WIDTH][SCREEN_HEIGHT] = { 0 };
 
 int bulletXMax = 0;
 int bulletXMin = 0;
 int bulletYMax = 0;
 int bulletYMin = 0;
+int tmpValue = 0;
 
 // Struct for TRON Player
 struct gameElement {
@@ -63,6 +78,12 @@ struct gameElement {
 
 };
 
+void bulletExplosion() {
+	bulletExist = 0;
+	bulletspeed = 10;
+
+}
+
 int main(int argc, char* args[])
 {
 	//The window we'll be rendering to
@@ -82,9 +103,6 @@ int main(int argc, char* args[])
 	SDL_Surface* pTank = SDL_LoadBMP("./resources/tank.bmp");
 	SDL_Surface* pTurret = SDL_LoadBMP("./resources/turret.bmp");
 	SDL_Surface* pBullet = SDL_LoadBMP("./resources/bullet.bmp");
-
-
-
 
 	//Initialize SDL
 	if (SDL_Init(SDL_INIT_VIDEO) < 0)
@@ -110,6 +128,28 @@ int main(int argc, char* args[])
 													gameElement(pBarrel, tBarrel, 565, 400),
 													gameElement(pBarrel, tBarrel, 760, 230),
 													gameElement(pBarrel, tBarrel, 1024, 475) };
+
+		// Initialisation des collisions
+			SDL_LockSurface(pBackground);
+			nbBytesParPixel = pBackground->format->BytesPerPixel;
+
+			for (int px = 0; px < SCREEN_WIDTH; px++) {
+				for (int py = bulletYMin; py < SCREEN_HEIGHT; py++) {
+
+					// Extraction de chaque pixel
+					startColor = (Uint8*)pBackground->pixels + py * pBackground->pitch + px * nbBytesParPixel;
+					bColor = *startColor;
+					gColor = *(startColor + 1);
+					rColor = *(startColor + 2);
+
+					// Récupération de la couleurs des pixels
+					if (rColor == emptyR && gColor == emptyG && bColor == emptyB) {
+						field[px][py] = false;
+					} else {
+						field[px][py] = true;
+					}
+				}
+			}
 
 		//SDL_SetWindowFullscreen(window, SDL_WINDOW_FULLSCREEN_DESKTOP);
 		if (window == NULL)
@@ -223,8 +263,24 @@ int main(int argc, char* args[])
 						bulletY = bulletY + (bulletspeed * sin(bulletAngle * PI / 180));
 
 						// Calcul pour les collisions
-						bulletXMax = bulletX + pBullet->w * cos(startBulletAngle * PI / 180) + pBullet->h * sin(bulletAngle * PI / 180);
-						bulletYMax = bulletY + pBullet->h * cos(startBulletAngle * PI / 180) + pBullet->w * sin(bulletAngle * PI / 180);
+						bulletXMax = bulletX + pBullet->w * cos(bulletAngle * PI / 180);
+						bulletYMax = bulletY + pBullet->h * sin(bulletAngle * PI / 180);
+
+						// Suite MIN - MAX
+						if (bulletXMin > bulletXMax) {
+							tmpValue = bulletXMax;
+							bulletXMax = bulletXMin;
+							bulletXMin = tmpValue;
+
+						}
+
+
+						if (bulletYMin > bulletYMax) {
+							tmpValue = bulletYMax;
+							bulletYMax = bulletYMin;
+							bulletYMin = tmpValue;
+
+						}
 
 						if (bulletAngle >= -90 && bulletAngle != 90) {
 							bulletAngle++;
@@ -253,16 +309,24 @@ int main(int argc, char* args[])
 								if (gameElements[i].xmin <= bulletXMax && gameElements[i].xmax >= bulletXMin) {
 									if (gameElements[i].ymin <= bulletYMax && gameElements[i].ymax >= bulletYMin) {
 										gameElements[i].active = 0;
-										bulletExist = 0;
+										bulletExplosion();
 									}
 								}
 							}
 						}
 
 						// Contrôle des collisions avec le décor - TODO
+						if (bulletXMin > 0 && bulletXMax < SCREEN_WIDTH && bulletYMin > 0 && bulletYMax < SCREEN_HEIGHT) {
 
-					
-					
+							for (int px = bulletXMin; px <= bulletXMax; px++) {
+								for (int py = bulletYMin; py <= bulletYMax; py++) {
+
+									if (field[px][py] == true) {
+										bulletExplosion();
+									}
+								}
+							}
+						}
 					}
 
 
