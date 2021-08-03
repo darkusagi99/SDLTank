@@ -59,7 +59,22 @@ int bulletYMax = 0;
 int bulletYMin = 0;
 int tmpValue = 0;
 
-// Struct for TRON Player
+int deltaX = 0;
+int deltaY = 0;
+int exSize = 0;
+int deltaT = 0;
+
+SDL_Surface* pBackground;
+SDL_Texture* tBackground;
+SDL_Renderer* renderer;
+
+
+int exMini = 0;
+int exMaxi = 0;
+int eyMini = 0;
+int eyMaxi = 0;
+
+// Struct for game Element
 struct gameElement {
 	int xmin, xmax, ymin, ymax, active;
 	SDL_Texture* texture;
@@ -82,13 +97,50 @@ void bulletExplosion() {
 	bulletExist = 0;
 	bulletspeed = 10;
 
+	// Position de l'explosion
+	int bulletX = (bulletXMax + bulletXMin) / 2;
+	int bulletY = (bulletYMax + bulletYMin) / 2;
+
+	// Boucle de MAJ des pixels
+	exSize = EXPLOSION_RADIUS * EXPLOSION_RADIUS;
+
+	exMini = bulletX - EXPLOSION_RADIUS;
+	exMaxi = bulletX + EXPLOSION_RADIUS;
+	eyMini = bulletY - EXPLOSION_RADIUS;
+	eyMaxi = bulletY + EXPLOSION_RADIUS;
+
+	for (int ex = exMini; ex < exMaxi; ex++) {
+		for (int ey = eyMini; ey < eyMaxi; ey++) {
+			deltaX = ex - bulletX;
+			deltaY = ey - bulletY;
+
+			deltaT = (deltaX * deltaX) + (deltaY * deltaY);
+
+			if (deltaT <= exSize && ex < SCREEN_WIDTH && ey < SCREEN_HEIGHT) {
+			
+				// Delete Pixel
+				startColor = (Uint8*)pBackground->pixels + ey * pBackground->pitch + ex * nbBytesParPixel;
+				*startColor = emptyB;
+				*(startColor + 1) = emptyG;
+				*(startColor + 2) = emptyR;
+
+
+				// Delete boolean table
+				field[ex][ey] = false;
+
+			}
+		}
+	}
+
+	tBackground = SDL_CreateTextureFromSurface(renderer, pBackground);
+
 }
 
 int main(int argc, char* args[])
 {
 	//The window we'll be rendering to
 	SDL_Window* window = NULL;
-	SDL_Renderer* renderer = NULL;
+	renderer = NULL;
 
 	// Event and Exit management
 	int quit = 0;
@@ -98,7 +150,7 @@ int main(int argc, char* args[])
 	SDL_Surface* screenSurface = NULL;
 
 	//Load sprites
-	SDL_Surface* pBackground = SDL_LoadBMP("./resources/background.bmp");
+	pBackground = SDL_LoadBMP("./resources/background.bmp");
 	SDL_Surface* pBarrel = SDL_LoadBMP("./resources/barrel.bmp");
 	SDL_Surface* pTank = SDL_LoadBMP("./resources/tank.bmp");
 	SDL_Surface* pTurret = SDL_LoadBMP("./resources/turret.bmp");
@@ -116,7 +168,7 @@ int main(int argc, char* args[])
 		renderer = SDL_CreateRenderer(window, -1, 0);
 
 		// Init textures
-		SDL_Texture* tBackground = SDL_CreateTextureFromSurface(renderer, pBackground);
+		tBackground = SDL_CreateTextureFromSurface(renderer, pBackground);
 		SDL_Texture* tBarrel = SDL_CreateTextureFromSurface(renderer, pBarrel);
 		SDL_Texture* tTank = SDL_CreateTextureFromSurface(renderer, pTank);
 		SDL_Texture* tTurret = SDL_CreateTextureFromSurface(renderer, pTurret);
